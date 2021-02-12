@@ -23,7 +23,9 @@ const byte DDo_pin = 9;
 const byte Mon_pin = 11;
 const byte Mdir_pin = 12;
 
-int brightness = 40;
+#define BRIGHTNESS 50
+
+int brightness = BRIGHTNESS;
 int fadeAmount = 5;
 #define WaitDel2 40
 #define WaitDel3 60
@@ -35,14 +37,17 @@ IPAddress myDns(192, 168, 2, 10);
 IPAddress gateway(192, 168, 2, 10);
 IPAddress subnet(255, 255, 255, 0);
 EthernetServer server = EthernetServer(404);
+byte ACT = 0;
+
 
 void setup() {
   pinMode(ERR_pin, OUTPUT); //use 13 pin for error notification
   digitalWrite(ERR_pin, LOW);
 
   pinMode(PIR5_pin, INPUT);
-  pinMode(TOUCHr_pin, INPUT);
-  pinMode(TOUCHl_pin, INPUT);
+  pinMode(TOUCHr_pin, INPUT_PULLUP);
+  pinMode(TOUCHl_pin, INPUT_PULLUP);
+  
   pinMode(TPLedr_pin, OUTPUT);
   pinMode(TPLedl_pin, OUTPUT);
   pinMode(DLL_pin, OUTPUT);
@@ -67,7 +72,7 @@ void setup() {
 
 void loop() {
    boolean drum, DDo, DDc, TPr, TPl;
-   byte ACT = 0;
+   
 
   //get NFC status by i2c once per second
   curr_time = millis();
@@ -179,51 +184,73 @@ void loop() {
   }
   delay(5);
   client.stop();
+  door_gate_control();
+ 
+}
 
-  if (ACT == 1) {
-    if (digitalRead(DDo_pin)) {
-      digitalWrite(Mdir_pin, LOW);
-      delay(100);
-      brightness = 40;
-      for (int i = 0;  i < 16; i++) {
-        brightness += fadeAmount;
-        analogWrite(Mon_pin, brightness);
-        delay(WaitDel2);
-      }
-      delay(100);
-      for (int i = 0;  i < 20; i++) {
-        brightness -= fadeAmount;
-        analogWrite(Mon_pin, brightness);
-        delay(WaitDel3);
-      }
-      while(digitalRead(DDo_pin)) {
-        delay(20);
-      }
-      digitalWrite(Mon_pin, LOW);
-     }
+
+void door_gate_control(void)
+{
+  static int i=0;
+
+ if (ACT == 1) {
+  digitalWrite(DLGH_pin, HIGH);
+  
+                  if (digitalRead(DDo_pin)) {
+                                              digitalWrite(Mdir_pin, LOW);
+                                              delay(100);
+                                              
+                                              if(i< 16){                        
+                                                         brightness += fadeAmount;
+                                                         analogWrite(Mon_pin, brightness);
+                                                         delay(WaitDel2);
+                                                         i++;
+                                                        }
+                                              delay(100);
+                                   if(i >=16 && i < 16+20) {
+                      
+                                                     brightness -= fadeAmount;
+                                                     analogWrite(Mon_pin, brightness);
+                                                     delay(WaitDel3);
+                                                     i++;
+                                                    }
+                      
+                                   if(!digitalRead(DDo_pin)){
+                                                              digitalWrite(Mon_pin, LOW);}
+                                                            }else
+    {
     ACT = 0;
+    brightness=BRIGHTNESS;
+    i=0;
+    digitalWrite(Mon_pin, LOW);}
   }
   if (ACT == 2) {
     if (digitalRead(DDc_pin)) {
-      digitalWrite(Mdir_pin, HIGH);
+                                digitalWrite(Mdir_pin, HIGH);
+                                delay(100);
+                                
+                      if(i<16)      {
+                                      brightness += fadeAmount;
+                                      analogWrite(Mon_pin, brightness);
+                                      delay(WaitDel2);
+                                      i++;
+                                    }
       delay(100);
-      brightness = 40;
-      for (int i = 0;  i < 16; i++) {
-        brightness += fadeAmount;
-        analogWrite(Mon_pin, brightness);
-        delay(WaitDel2);
-      }
-      delay(100);
-      for (int i = 0;  i < 18; i++) {
-        brightness -= fadeAmount;
-        analogWrite(Mon_pin, brightness);
-        delay(WaitDel3);
-      }
-      while(digitalRead(DDc_pin)) {
-        delay(20);
-      }
-      digitalWrite(Mon_pin, LOW);
-    }
+      if(i>=16 && i <16+18)         {
+                                      brightness -= fadeAmount;
+                                      analogWrite(Mon_pin, brightness);
+                                      delay(WaitDel3);
+                                      i++;
+                                    }
+                                    
+ 
+      if(!digitalRead(DDc_pin)){
+      digitalWrite(Mon_pin, LOW);}
+    } else {
     ACT = 0;
+    brightness=BRIGHTNESS;
+    i=0;
+    digitalWrite(Mon_pin, LOW);
+    }
   }
 }
